@@ -1,7 +1,4 @@
 <?php
-// Set mock flag cookie for the XSS challenge
-setcookie("Privileged_Flag", "POLINES{XSS_ST0R3D_S3CR3T_XX}", time() + 3600, "/");
-
 // MySQL Configuration
 $db_host = '127.0.0.1';
 $db_port = '3306';
