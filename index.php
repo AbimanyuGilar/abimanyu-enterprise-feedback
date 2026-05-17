@@ -1,4 +1,9 @@
 <?php
+// Hapus cookie Privileged_Flag lama jika masih tersimpan di browser
+if (isset($_COOKIE['Privileged_Flag'])) {
+    setcookie("Privileged_Flag", "", time() - 3600, "/");
+}
+
 // MySQL Configuration
 $db_host = '127.0.0.1';
 $db_port = '3306';

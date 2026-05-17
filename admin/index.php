@@ -1,4 +1,9 @@
 <?php
+// Hapus cookie Privileged_Flag lama jika masih tersimpan di browser
+if (isset($_COOKIE['Privileged_Flag'])) {
+    setcookie("Privileged_Flag", "", time() - 3600, "/");
+}
+
 // Pengaturan Sesi Admin & Flag
 $admin_cookie_name = "admin_session";
 $admin_cookie_value = "adm1n_s3cr3t_778899_token";
@@ -24,6 +29,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $is_admin = false;
 if (isset($_COOKIE[$admin_cookie_name]) && $_COOKIE[$admin_cookie_name] === $admin_cookie_value) {
     $is_admin = true;
+}
+
+// MySQL Configuration & Fetch Feedbacks if Admin
+$feedbacks = [];
+if ($is_admin) {
+    $db_host = '127.0.0.1';
+    $db_port = '3306';
+    $db_user = 'root';
+    $db_pass = '';
+    $db_name = 'abimanyu_feedbacks';
+
+    $conn = new mysqli($db_host, $db_user, $db_pass, '', $db_port);
+    if (!$conn->connect_error) {
+        $conn->select_db($db_name);
+        $result = $conn->query("SELECT * FROM feedbacks ORDER BY id DESC");
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $feedbacks[] = $row;
+            }
+        }
+        $conn->close();
+    }
 }
 
 // Handle Logout
@@ -92,7 +119,42 @@ if (isset($_GET['logout'])) {
                     </div>
                 </div>
                 
-                <div class="text-center pt-4 border-t border-slate-700">
+                <!-- Feedback List (Vulnerable to XSS) -->
+                <div class="mt-8 border-t border-slate-700 pt-8">
+                    <h3 class="text-xl font-bold text-white mb-6 flex items-center">
+                        <svg class="h-5 w-5 mr-2 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                        Daftar Masukan Klien
+                    </h3>
+                    
+                    <div class="space-y-6">
+                        <?php if (empty($feedbacks)): ?>
+                            <p class="text-slate-400 italic text-sm text-center py-4 bg-slate-900/50 rounded-lg">Belum ada masukan dari klien.</p>
+                        <?php else: ?>
+                            <?php foreach ($feedbacks as $fb): ?>
+                                <div class="bg-slate-900 rounded-xl p-5 border border-slate-750">
+                                    <div class="flex justify-between items-start mb-3">
+                                        <div>
+                                            <!-- VULNERABILITY: Not sanitized -->
+                                            <h4 class="text-white font-bold"><?php echo $fb['name']; ?></h4>
+                                            <p class="text-xs text-indigo-400 mt-1"><?php echo !empty($fb['company']) ? $fb['company'] : 'Klien Independen'; ?> &bull; <?php echo $fb['date']; ?></p>
+                                        </div>
+                                        <div class="flex text-yellow-500 text-sm">
+                                            <?php echo str_repeat("⭐", (int)$fb['rating']); ?>
+                                        </div>
+                                    </div>
+                                    <div class="text-sm text-slate-300 bg-slate-800 p-3 rounded-lg border border-slate-700">
+                                        <!-- VULNERABILITY: Not sanitized -->
+                                        <?php echo $fb['message']; ?>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <div class="text-center pt-8 mt-4 border-t border-slate-700">
                     <a href="/" class="text-indigo-400 hover:text-indigo-300 text-sm font-medium transition-colors flex items-center justify-center space-x-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
                         <span>Kembali ke Portal Publik</span>
